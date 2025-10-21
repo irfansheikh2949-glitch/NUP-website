@@ -1,0 +1,10 @@
+import { ServiceCategory } from '../types';
+
+export const serviceList: ServiceCategory[] = [
+    { name: "Business & Marketing", desc: "Essential materials for your brand.", subServices: [{ name: "Business Cards", type: 'default' }, { name: "Brochures & Flyers", type: 'default' }, { name: "Catalogs", type: 'book' }, { name: "Leaflets", type: 'letterhead' }, { name: "Sales Sheets", type: 'default' }, { name: "Rack Cards", type: 'default' }] },
+    { name: "Stationery & Office", desc: "Professional office essentials.", subServices: [{ name: "Letterheads", type: 'letterhead' }, { name: "Envelopes", type: 'envelope' }, { name: "Notepads", type: 'notepad' }, { name: "Presentation Folders", type: 'folder' }, { name: "Diaries & Calendars", type: 'book' }] },
+    { name: "Large Format & Banners", desc: "Durable prints for maximum impact.", subServices: [{ name: "Vinyl Banners", type: 'default' }, { name: "Flex Printing", type: 'default' }, { name: "Posters", type: 'default' }, { name: "Standees & Danglers", type: 'default' }] },
+    { name: "Events & Hospitality", desc: "Custom materials for any occasion.", subServices: [{ name: "Invitation Cards", type: 'envelope' }, { name: "Restaurant Menus", type: 'default' }, { name: "Event Tickets", type: 'default' }, { name: "Tent Cards", type: 'default' }, { name: "Gift Certificates", type: 'default' }] },
+    { name: "Stickers, Labels & Tags", desc: "Custom shapes for branding.", subServices: [{ name: "Stickers with Cutting", type: 'default' }, { name: "Product Labels", type: 'default' }, { name: "Hang Tags", type: 'default' }, { name: "Paper Bags", type: 'paperbag' }] },
+    { name: "Publications & Binding", desc: "Professional binding for publications.", subServices: [{ name: "School Books", type: 'book' }, { name: "Booklets & Magazines", type: 'book' }, { name: "High Speed Binding", type: 'default' }, { name: "Lamination", type: 'default' }] },
+];
