@@ -37,9 +37,13 @@ const Logo3D: React.FC<Logo3DProps> = ({ size = 'large' }) => {
                 {colors.map((color, i) => (
                     <div key={color} className={`absolute ${currentSize.petal} rounded-full`} style={{ background: color, transform: `rotate(${i * 60}deg) translate(${size === 'large' ? '60px' : '30px'}) rotate(-120deg)`, clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.3)'}}/>
                 ))}
-                <span className={`${currentSize.centerText} font-bold text-gray-800 z-10`} style={{ fontFamily: "'Rouge Script', cursive", textShadow: '2px 2px 4px rgba(0,0,0,0.2)'}}>NUP</span>
+                <span className={`${currentSize.centerText} font-bold z-10`} style={{ fontFamily: "cursive", textShadow: '2px 2px 4px rgba(0,0,0,0.2)'}}>
+                    {'NUP'.split('').map((char, i) => (
+                        <span key={i} style={{ color: textColors[i % textColors.length] }}>{char}</span>
+                    ))}
+                </span>
             </div>
-            <h1 className={`${currentSize.mainText} text-center`} style={{ fontFamily: "'Rouge Script', cursive", textShadow }}>
+            <h1 className={`${currentSize.mainText} text-center font-bold`} style={{ fontFamily: "'Delius', cursive", textShadow }}>
                 {'New United Printers'.split('').map((char, i) => (<span key={i} style={{ color: textColors[i % textColors.length] }}>{char}</span>))}
             </h1>
         </div>

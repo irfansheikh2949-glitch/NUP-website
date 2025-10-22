@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
+import { GoogleGenAI, Chat } from '@google/genai';
 import { ServiceCategory } from '../../types';
 
 interface AICopilotProps {
@@ -17,43 +17,83 @@ const AICopilot: React.FC<AICopilotProps> = ({ serviceList }) => {
     const [messages, setMessages] = useState<Message[]>([{ id: 1, text: "Hello! How can I help you with your printing needs today?", sender: 'bot' }]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [chat, setChat] = useState<Chat | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => { 
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
     }, [messages]);
 
-    const getBotResponse = (userInput: string): string => {
-        const lowerInput = userInput.toLowerCase();
-        for (const category of serviceList) { 
-            if (lowerInput.includes(category.name.toLowerCase())) { 
-                return `Yes, we offer a wide range of services for ${category.name}. This includes ${category.subServices.slice(0, 3).map(s => s.name).join(', ')}, and more.`; 
-            } 
-            for (const sub of category.subServices) { 
-                if (lowerInput.includes(sub.name.toLowerCase().replace(/ & /g, ' '))) { 
-                    return `Absolutely! We specialize in printing high-quality ${sub.name}. You'll find this service listed under the "${category.name}" category.`; 
-                } 
-            } 
-        }
-        if (lowerInput.includes('contact') || lowerInput.includes('phone') || lowerInput.includes('address')) { 
-            return "You can reach us at 9829433936 or visit us at Plot No 2, Near Patel Hostel, Shobhagpura, Udaipur."; 
-        }
-        return "I can help with questions about our services like 'brochures' or 'stickers'. For pricing or quotes, please use the 'Get a Free Quote' button.";
-    };
+    useEffect(() => {
+      const initializeChat = () => {
+          try {
+              const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
-    const handleSendMessage = (e: React.FormEvent) => {
+              const serviceDetails = serviceList.map(category => 
+                  `- ${category.name}: ${category.desc} Includes: ${category.subServices.map(s => s.name).join(', ')}.`
+              ).join('\n');
+
+              const systemInstruction = `You are a friendly and helpful AI assistant for New United Printers. Your name is NUP Copilot.
+              Your goal is to answer questions about the company's printing services and help users find what they need.
+              Be concise and friendly.
+              If asked about pricing or a quote, you MUST direct the user to click the "Get a Free Quote" button.
+              If asked for contact details, provide: Address: Plot No 2, Near Patel Hostel, Shobhagpura, Udaipur -313001, Mobile: 9829433936, Email: United.313001@gmail.com.
+              
+              Here is a list of our services:
+              ${serviceDetails}
+              
+              Do not answer questions that are not related to New United Printers or its printing services.`;
+
+              const chatSession = ai.chats.create({
+                  model: 'gemini-2.5-flash',
+                  config: {
+                    systemInstruction,
+                  },
+                });
+              setChat(chatSession);
+          } catch (error) {
+              console.error("Failed to initialize Gemini chat:", error);
+              setMessages(prev => [...prev, {id: Date.now(), text: "Sorry, I'm having trouble connecting right now. Please try again later.", sender: 'bot'}]);
+          }
+      };
+
+      initializeChat();
+  }, [serviceList]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault(); 
-        if (!inputValue.trim()) return;
-        const userMessage: Message = { id: Date.now(), text: inputValue, sender: 'user' };
+        if (!inputValue.trim() || isTyping || !chat) return;
+
+        const userMessageText = inputValue;
+        const userMessage: Message = { id: Date.now(), text: userMessageText, sender: 'user' };
         setMessages(prev => [...prev, userMessage]); 
         setInputValue(''); 
         setIsTyping(true);
-        setTimeout(() => { 
-            const botResponseText = getBotResponse(inputValue); 
-            const botMessage: Message = { id: Date.now() + 1, text: botResponseText, sender: 'bot' };
-            setMessages(prev => [...prev, botMessage]); 
-            setIsTyping(false); 
-        }, 1500);
+        
+        const botMessageId = Date.now() + 1;
+        setMessages(prev => [...prev, { id: botMessageId, text: '', sender: 'bot' }]);
+
+        try {
+            const response = await chat.sendMessageStream({ message: userMessageText });
+
+            for await (const chunk of response) {
+                setMessages(prev => prev.map(msg => 
+                    msg.id === botMessageId 
+                        ? { ...msg, text: msg.text + chunk.text }
+                        : msg
+                ));
+            }
+
+        } catch (error) {
+            console.error("Error sending message to Gemini:", error);
+            setMessages(prev => prev.map(msg => 
+                msg.id === botMessageId 
+                    ? { ...msg, text: "Sorry, something went wrong. Please try again." }
+                    : msg
+            ));
+        } finally {
+            setIsTyping(false);
+        }
     };
 
     return (
@@ -74,11 +114,11 @@ const AICopilot: React.FC<AICopilotProps> = ({ serviceList }) => {
                     {messages.map((msg) => (
                         <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[80%] rounded-lg px-3 py-2 ${msg.sender === 'user' ? 'bg-cyan-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                                {msg.text}
+                                {msg.text.split('\n').map((line, i) => <p key={i}>{line}</p>)}
                             </div>
                         </div>
                     ))}
-                    {isTyping && (
+                    {isTyping && messages[messages.length-1]?.sender === 'user' && (
                         <div className="flex justify-start">
                             <div className="bg-gray-200 text-gray-500 rounded-lg px-3 py-2 flex items-center space-x-1">
                                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></span>
