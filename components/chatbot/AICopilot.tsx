@@ -18,6 +18,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ serviceList }) => {
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [chat, setChat] = useState<Chat | null>(null);
+    const [isAvailable, setIsAvailable] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => { 
@@ -26,6 +27,13 @@ const AICopilot: React.FC<AICopilotProps> = ({ serviceList }) => {
 
     useEffect(() => {
       const initializeChat = () => {
+          if (!process.env.API_KEY) {
+              console.error("Gemini API Key is not configured. The AI Copilot will be unavailable.");
+              setMessages(prev => [...prev, { id: Date.now(), text: "I'm currently unavailable due to a configuration issue. Please check back later.", sender: 'bot' }]);
+              setIsAvailable(false);
+              return;
+          }
+
           try {
               const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
@@ -51,9 +59,11 @@ const AICopilot: React.FC<AICopilotProps> = ({ serviceList }) => {
                   },
                 });
               setChat(chatSession);
+              setIsAvailable(true);
           } catch (error) {
               console.error("Failed to initialize Gemini chat:", error);
               setMessages(prev => [...prev, {id: Date.now(), text: "Sorry, I'm having trouble connecting right now. Please try again later.", sender: 'bot'}]);
+              setIsAvailable(false);
           }
       };
 
@@ -62,7 +72,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ serviceList }) => {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault(); 
-        if (!inputValue.trim() || isTyping || !chat) return;
+        if (!inputValue.trim() || isTyping || !chat || !isAvailable) return;
 
         const userMessageText = inputValue;
         const userMessage: Message = { id: Date.now(), text: userMessageText, sender: 'user' };
@@ -134,10 +144,11 @@ const AICopilot: React.FC<AICopilotProps> = ({ serviceList }) => {
                         type="text" 
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="Ask about our services..." 
-                        className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500"
+                        placeholder={isAvailable ? "Ask about our services..." : "Copilot is unavailable"}
+                        disabled={!isAvailable}
+                        className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
-                    <button type="submit" className="bg-cyan-500 text-white px-4 py-2 rounded-r-md hover:bg-cyan-600 cursor-pointer">Send</button>
+                    <button type="submit" disabled={!isAvailable} className="bg-cyan-500 text-white px-4 py-2 rounded-r-md hover:bg-cyan-600 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed">Send</button>
                 </form>
             </div>
         </>
